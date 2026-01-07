@@ -28,6 +28,7 @@ model User {
   student       Student?
   
   sessions      Session[]
+  faceVerificationIssues FaceVerificationIssue[]
 }
 
 enum UserRole {
@@ -150,14 +151,31 @@ model Question {
   subjectId     String
   subject       Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   questionText  String     // Encrypted
-  options       String     // JSON array, encrypted
-  correctAnswer Int        // Index of correct option
+  questionType  QuestionType @default(SINGLE_CHOICE)
+  options       String?    // JSON array, encrypted (null for essay/coding)
+  correctAnswer String?    // JSON: can be array for multiple choice, string for fill-blank, etc.
   marks         Int        @default(1)
+  imageUrl      String?    // URL to question image (for hotspot/image-based questions)
+  metadata      String?    // JSON: additional data (matching pairs, ordering items, etc.)
   isActive      Boolean    @default(true)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   
   examQuestions ExamQuestion[]
+}
+
+enum QuestionType {
+  SINGLE_CHOICE      // Single-answer MCQ
+  MULTIPLE_CHOICE    // Multiple-answer MCQ
+  TRUE_FALSE         // True/False
+  BEST_ANSWER        // Best-answer (multiple correct, one best)
+  FILL_BLANK         // Fill-in-the-Blank / Short Answer
+  MATCHING           // Matching Questions
+  HOTSPOT            // Hotspot / Image-Based Questions
+  ORDERING           // Ordering / Sequencing Questions
+  SIMULATION         // Simulation / Scenario-Based Questions
+  ESSAY              // Essay / Long-Form Questions
+  CODING             // Coding Questions
 }
 
 model Exam {
@@ -207,6 +225,8 @@ model ExamSession {
   warnings        Int       @default(0) // Focus/audio warnings
   isLoggedOut     Boolean   @default(false)
   logoutReason    String?
+  loggedOutBy     String?   // Proctor/Admin ID who logged out the student
+  loggedOutAt     DateTime? // When student was logged out
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
@@ -221,6 +241,9 @@ model ProctoringLog {
   timestamp     DateTime    @default(now())
   details       String?     // JSON: duration, reason, etc.
   actionTaken   String?
+  proctorId     String?     // ID of proctor who took action
+  proctorName   String?     // Name of proctor
+  infractionReason String?  // Reason for proctor action
 }
 
 enum ProctoringEvent {
@@ -296,4 +319,34 @@ model Result {
   publishedAt      DateTime?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+}
+
+model FaceVerificationIssue {
+  id              String   @id @default(cuid())
+  studentId       String
+  student         Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  matricNumber   String
+  attemptedAt     DateTime @default(now())
+  failureReason   String
+  passportPhoto   String   // Base64 or URL
+  capturedPhoto   String?  // Base64 or URL of captured photo
+  attempts        Int      @default(1)
+  status          FaceVerificationStatus @default(PENDING)
+  approvedBy      String?  // Proctor/Admin ID
+  approvedAt      DateTime?
+  approvalNotes   String?
+  rejectedBy      String?   // Proctor/Admin ID
+  rejectedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([studentId])
+  @@index([status])
+}
+
+enum FaceVerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }

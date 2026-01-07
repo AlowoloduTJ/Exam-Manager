@@ -5,9 +5,13 @@ import { QuestionData } from "./validation";
 
 export interface ParsedQuestion {
   questionText: string;
-  options: string[];
-  correctAnswer: number;
+  type?: string;
+  options?: string[];
+  correctAnswer?: number;
+  correctAnswers?: number[];
   marks: number;
+  imageUrl?: string;
+  metadata?: any;
 }
 
 /**
