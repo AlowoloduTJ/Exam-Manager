@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { encryptObject } from "@/lib/encryption";
-import { parseQuestions } from "@/lib/question-parser";
 import { writeFile } from "fs/promises";
 import path from "path";
 
@@ -128,7 +127,11 @@ async function createQuestion(questionData: any, subjectId: string) {
       questionText: encryptedText,
       questionType: questionData.type || "SINGLE_CHOICE",
       options: encryptedOptions,
-      correctAnswer: JSON.stringify(questionData.correctAnswer ?? questionData.correctAnswers ?? questionData.correctAnswer),
+      correctAnswer: JSON.stringify(
+        questionData.correctAnswers 
+          ? questionData.correctAnswers 
+          : (questionData.correctAnswer !== undefined ? [questionData.correctAnswer] : [0])
+      ),
       marks: questionData.marks || 1,
       imageUrl: questionData.imageUrl || null,
       metadata: questionData.metadata ? JSON.stringify(questionData.metadata) : null,
@@ -146,6 +149,7 @@ async function createImageQuestion(fileName: string, imageUrl: string, subjectId
       questionType: "HOTSPOT",
       imageUrl,
       marks: 1,
+      correctAnswer: JSON.stringify([]), // Empty array for hotspot questions
     },
   });
 }

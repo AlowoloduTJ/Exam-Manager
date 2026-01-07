@@ -24,11 +24,16 @@ next-env.d.ts
 # misc
 .DS_Store
 *.pem
+
+# Environment Variables - CRITICAL: Never commit secrets!
+# .env.local contains ALL your secrets and credentials
 .env
 .env.local
+.env*.local
 .env.development.local
 .env.test.local
 .env.production.local
+# Keep .env.example as a template (safe to commit)
 
 # debug
 npm-debug.log*

@@ -1,6 +1,5 @@
 // Authentication and session management utilities
 
-import { cookies } from "next/headers";
 import { db } from "./db";
 import { generateDeviceId } from "./encryption";
 import { NextRequest } from "next/server";
@@ -19,9 +18,9 @@ export async function validateStudentSession(
   request: NextRequest
 ): Promise<SessionData | null> {
   try {
-    const cookieStore = cookies();
-    const sessionToken = cookieStore.get("studentSession")?.value;
-    const deviceIdCookie = cookieStore.get("deviceId")?.value;
+    // In middleware, use request.cookies instead of cookies()
+    const sessionToken = request.cookies.get("studentSession")?.value;
+    const deviceIdCookie = request.cookies.get("deviceId")?.value;
 
     if (!sessionToken || !deviceIdCookie) {
       return null;
