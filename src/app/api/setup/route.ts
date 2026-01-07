@@ -80,10 +80,14 @@ export async function GET() {
     });
 
     if (!adminSettings) {
-      return NextResponse.json({ isSetup: false });
+      return NextResponse.json({ 
+        setupComplete: false,
+        isSetup: false 
+      });
     }
 
     return NextResponse.json({
+      setupComplete: true,
       isSetup: true,
       institution: {
         name: adminSettings.institutionName,
@@ -92,10 +96,12 @@ export async function GET() {
         vision: adminSettings.vision,
       },
     });
-  } catch (error) {
-    return NextResponse.json(
-      { message: "Failed to check setup status" },
-      { status: 500 }
-    );
+  } catch (error: any) {
+    console.error("Setup GET error:", error);
+    // Return safe default instead of error
+    return NextResponse.json({ 
+      setupComplete: false,
+      isSetup: false 
+    });
   }
 }

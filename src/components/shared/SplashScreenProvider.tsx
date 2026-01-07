@@ -17,19 +17,33 @@ export function SplashScreenProvider({ children }: { children: React.ReactNode }
     const hasSeenSplash = sessionStorage.getItem("hasSeenSplash");
     if (hasSeenSplash) {
       setShowSplash(false);
-    } else {
-      // Fetch institution data
-      fetch("/api/setup")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.isSetup) {
-            setInstitutionData(data);
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to fetch institution data:", error);
-        });
+      return;
     }
+
+    // Fetch institution data (with error handling)
+    // If API fails, just skip splash screen - don't block page load
+    fetch("/api/setup")
+      .then((res) => {
+        if (!res.ok) {
+          // If setup API fails, just skip splash screen
+          setShowSplash(false);
+          return null;
+        }
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.setupComplete) {
+          setInstitutionData(data);
+        } else {
+          // No setup data, skip splash after short delay
+          setTimeout(() => setShowSplash(false), 2000);
+        }
+      })
+      .catch((error) => {
+        console.error("Failed to fetch institution data:", error);
+        // On error, skip splash screen immediately
+        setShowSplash(false);
+      });
   }, []);
 
   if (showSplash) {

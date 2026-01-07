@@ -1,4 +1,5 @@
 // Prisma Schema for Exam Manager System
+// Note: SQLite doesn't support enums, so we use String types instead
 
 generator client {
   provider = "prisma-client-js"
@@ -13,7 +14,7 @@ model User {
   id            String   @id @default(cuid())
   email         String   @unique
   password      String   // Encrypted
-  role          UserRole
+  role          String   // ADMIN, EXAMINER, STUDENT
   name          String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -26,15 +27,6 @@ model User {
   
   // Student specific
   student       Student?
-  
-  sessions      Session[]
-  faceVerificationIssues FaceVerificationIssue[]
-}
-
-enum UserRole {
-  ADMIN
-  EXAMINER
-  STUDENT
 }
 
 model AdminSettings {
@@ -86,6 +78,7 @@ model Department {
   updatedAt   DateTime @updatedAt
   
   students    Student[]
+  examiners   Examiner[]
   
   @@unique([facultyId, code])
 }
@@ -120,6 +113,8 @@ model Student {
   examSessions          ExamSession[]
   essaySubmissions      EssaySubmission[]
   deviceSessions        DeviceSession[]
+  faceVerificationIssues FaceVerificationIssue[]
+  results               Result[]
 }
 
 model DeviceSession {
@@ -151,7 +146,7 @@ model Question {
   subjectId     String
   subject       Subject    @relation(fields: [subjectId], references: [id], onDelete: Cascade)
   questionText  String     // Encrypted
-  questionType  QuestionType @default(SINGLE_CHOICE)
+  questionType  String     @default("SINGLE_CHOICE") // SINGLE_CHOICE, MULTIPLE_CHOICE, etc.
   options       String?    // JSON array, encrypted (null for essay/coding)
   correctAnswer String?    // JSON: can be array for multiple choice, string for fill-blank, etc.
   marks         Int        @default(1)
@@ -162,20 +157,6 @@ model Question {
   updatedAt     DateTime   @updatedAt
   
   examQuestions ExamQuestion[]
-}
-
-enum QuestionType {
-  SINGLE_CHOICE      // Single-answer MCQ
-  MULTIPLE_CHOICE    // Multiple-answer MCQ
-  TRUE_FALSE         // True/False
-  BEST_ANSWER        // Best-answer (multiple correct, one best)
-  FILL_BLANK         // Fill-in-the-Blank / Short Answer
-  MATCHING           // Matching Questions
-  HOTSPOT            // Hotspot / Image-Based Questions
-  ORDERING           // Ordering / Sequencing Questions
-  SIMULATION         // Simulation / Scenario-Based Questions
-  ESSAY              // Essay / Long-Form Questions
-  CODING             // Coding Questions
 }
 
 model Exam {
@@ -195,6 +176,7 @@ model Exam {
   questions       ExamQuestion[]
   sessions        ExamSession[]
   essayQuestions  EssayQuestion[]
+  results         Result[]
 }
 
 model ExamQuestion {
@@ -237,22 +219,13 @@ model ProctoringLog {
   id            String      @id @default(cuid())
   sessionId     String
   session       ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
-  eventType     ProctoringEvent
+  eventType     String      // FOCUS_LOST, FOCUS_RESTORED, AUDIO_DETECTED, etc.
   timestamp     DateTime    @default(now())
   details       String?     // JSON: duration, reason, etc.
   actionTaken   String?
   proctorId     String?     // ID of proctor who took action
   proctorName   String?     // Name of proctor
   infractionReason String?  // Reason for proctor action
-}
-
-enum ProctoringEvent {
-  FOCUS_LOST
-  FOCUS_RESTORED
-  AUDIO_DETECTED
-  AUDIO_WARNING
-  LOGOUT
-  FACE_MISMATCH
 }
 
 model EssayQuestion {
@@ -278,17 +251,9 @@ model EssaySubmission {
   scannedPages    String   // JSON array of file paths/URLs
   wordCount       Int
   submittedAt     DateTime @default(now())
-  status          EssayStatus @default(PENDING)
+  status          String   @default("PENDING") // PENDING, IN_PROGRESS, EVALUATED, FLAGGED, RE_EVALUATION
   
   evaluations     EssayEvaluation[]
-}
-
-enum EssayStatus {
-  PENDING
-  IN_PROGRESS
-  EVALUATED
-  FLAGGED
-  RE_EVALUATION
 }
 
 model EssayEvaluation {
@@ -331,7 +296,7 @@ model FaceVerificationIssue {
   passportPhoto   String   // Base64 or URL
   capturedPhoto   String?  // Base64 or URL of captured photo
   attempts        Int      @default(1)
-  status          FaceVerificationStatus @default(PENDING)
+  status          String   @default("PENDING") // PENDING, APPROVED, REJECTED
   approvedBy      String?  // Proctor/Admin ID
   approvedAt      DateTime?
   approvalNotes   String?
@@ -343,10 +308,4 @@ model FaceVerificationIssue {
   
   @@index([studentId])
   @@index([status])
-}
-
-enum FaceVerificationStatus {
-  PENDING
-  APPROVED
-  REJECTED
 }
